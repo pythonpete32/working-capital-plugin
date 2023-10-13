@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.8.17;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {PermissionLib} from "@aragon/osx/core/permission/PermissionLib.sol";
-import {PluginSetup, IPluginSetup} from "@aragon/osx/framework/plugin/setup/PluginSetup.sol";
-import {WorkingCapital} from "./WorkingCapital.sol";
-import {IDAO} from "@aragon/osx/core/plugin/Plugin.sol";
-import {DAO} from "@aragon/osx/core/dao/DAO.sol";
+import { console2 } from "forge-std/console2.sol";
+
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { PermissionLib } from "@aragon/osx/core/permission/PermissionLib.sol";
+import { PluginSetup, IPluginSetup } from "@aragon/osx/framework/plugin/setup/PluginSetup.sol";
+import { WorkingCapital } from "./WorkingCapital.sol";
+import { IDAO } from "@aragon/osx/core/plugin/Plugin.sol";
+import { DAO } from "@aragon/osx/core/dao/DAO.sol";
 
 contract WorkingCapitalSetup is PluginSetup {
     using Clones for address;
 
-    struct InputData {
-        uint256 hatId;
-        uint256 spendingLimitETH;
-    }
-    
     /// @notice The address of `WorkingCapital` plugin logic contract to be cloned.
     address private immutable workingCapitalImplementation;
 
@@ -32,18 +29,23 @@ contract WorkingCapitalSetup is PluginSetup {
         external
         returns (address plugin, PreparedSetupData memory preparedSetupData)
     {
+        console2.log("before decode");
         // Decode `_data` to extract the params needed for cloning and initializing the `Admin` plugin.
-        InputData memory inputData = abi.decode(_data, (InputData));
+        (uint256 hatId, uint256 spendingLimitETH) = abi.decode(_data, (uint256, uint256));
+        console2.log("after decode");
+
+        console2.log("before clone");
 
         // Clone plugin contract.
         plugin = workingCapitalImplementation.clone();
 
+        console2.log("after clone");
+
         // Initialize cloned plugin contract.
-        WorkingCapital(plugin).initialize(IDAO(_dao), inputData.hatId, inputData.spendingLimitETH);
+        WorkingCapital(plugin).initialize(IDAO(_dao), hatId, spendingLimitETH);
 
         // Prepare permissions
-        PermissionLib.MultiTargetPermission[]
-            memory permissions = new PermissionLib.MultiTargetPermission[](2);
+        PermissionLib.MultiTargetPermission[] memory permissions = new PermissionLib.MultiTargetPermission[](2);
 
         // Grant the `EXECUTE_PERMISSION` on the DAO to the plugin.
         permissions[0] = PermissionLib.MultiTargetPermission({

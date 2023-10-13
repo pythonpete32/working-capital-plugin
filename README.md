@@ -1,1 +1,0 @@
-# working-capital-plugin
